@@ -3,7 +3,7 @@ local localPlayer = Players.LocalPlayer
 
 local DEFAULTS = {
 	TOGGLE = "L",
-	TARGET_LIMB = "HumanoidRootPart",
+	TARGET_LIMB = "UpperTorso",
 	LIMB_SIZE = 15,
 	LIMB_TRANSPARENCY = 0.9,
 	LIMB_CAN_COLLIDE = false,
@@ -173,8 +173,8 @@ function PlayerData:modifyLimbProperties(limb)
 		limb.Size = newSize
 		limb.Transparency = parent._settings.LIMB_TRANSPARENCY
 		limb.CanCollide = canCollide
-		if parent._settings.TARGET_LIMB ~= "HumanoidRootPart" then
-			limb.Massless = true
+		if parent._settings.TARGET_LIMB ~= "UpperTorso" then
+			limb.Massless = false
 		end
 	end
 
