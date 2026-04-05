@@ -230,10 +230,7 @@ function PlayerData:setupCharacter(char)
 
 	local humanoid = char:FindFirstChildOfClass("Humanoid")
 if not humanoid or humanoid.Health <= 0 then return end
-
-local humanoid = char:FindFirstChildOfClass("Humanoid")
-if not humanoid or humanoid.Health <= 0 then return end
-
+	
 local lastSeat = humanoid.SeatPart
 
 self.conns:Connect(
