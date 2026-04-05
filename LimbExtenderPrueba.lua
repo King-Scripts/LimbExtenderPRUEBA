@@ -331,7 +331,46 @@ function PlayerData:setupCharacter(char)
         if self._destroyed then return end
         if char and char.Parent then
             forceNoTorsoCollision(char)
+            handleVehicleExit(char) ----- prueba pa ver si no buguea la moto xd 
         end
+    end)
+end   --final pa la moto
+
+local function handleVehicleExit(character)
+    if not character or not character.Parent then return end
+   
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not (humanoid and rootPart) then return end
+
+    local connection
+    connection = humanoid:GetPropertyChangedSignal("Sit"):Connect(function()
+        if humanoid.Sit == false then -- baja de moto y achicamos hitbox ( no olvidar ) xd
+            if connection then
+                connection:Disconnect()
+                connection = nil
+            end
+
+            -- Guardamo
+            local currentBigSize = rootPart.Size
+
+            -- Bajamo
+            rootPart.Size = Vector3.new(2, 2, 1)
+            rootPart.CanCollide = false
+
+            -- Volvemo 
+            task.delay(0.28, function()
+                if rootPart and rootPart.Parent then
+                    rootPart.Size = currentBigSize
+                    rootPart.CanCollide = DEFAULTS.LIMB_CAN_COLLIDE
+                end
+            end)
+        end
+    end)
+
+    -- Limpio pa q no de bug. xxx.com
+    character.AncestryChanged:Once(function()
+        if connection then connection:Disconnect() end
     end)
 end
 function PlayerData:onCharacter(char)
