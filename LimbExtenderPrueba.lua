@@ -231,6 +231,9 @@ function PlayerData:setupCharacter(char)
 	local humanoid = char:FindFirstChildOfClass("Humanoid")
 if not humanoid or humanoid.Health <= 0 then return end
 
+local humanoid = char:FindFirstChildOfClass("Humanoid")
+if not humanoid or humanoid.Health <= 0 then return end
+
 local lastSeat = humanoid.SeatPart
 
 self.conns:Connect(
@@ -238,9 +241,16 @@ self.conns:Connect(
 	function()
 		local currentSeat = humanoid.SeatPart
 
-		-- SOLO cuando pasa de sentado → no sentado
+		-- SOLO cuando se baja
 		if lastSeat and not currentSeat then
 			task.spawn(function()
+
+				-- ⏱ esperar a que deje estado de vehículo
+				repeat task.wait()
+				until humanoid.SeatPart == nil 
+				and humanoid:GetState() ~= Enum.HumanoidStateType.Seated
+
+				task.wait(0.1) -- extra sync
 
 				-- 🔴 OFF
 				for limb, _ in pairs(self._parent._limbStore) do
@@ -254,7 +264,7 @@ self.conns:Connect(
 					self.PartStreamable = nil
 				end
 
-				task.wait(0.15)
+				task.wait(0.1)
 
 				-- 🟢 ON (tu mismo sistema)
 				if not self._destroyed then
