@@ -173,11 +173,12 @@ function PlayerData:modifyLimbProperties(limb)
 		limb.Size = newSize
 		limb.Transparency = parent._settings.LIMB_TRANSPARENCY
 		limb.CanCollide = canCollide
-		if parent._settings.TARGET_LIMB ~= "UpperTorso" then
-			limb.Massless = false
-		end
-	end
-
+		if parent._settings.TARGET_LIMB == "UpperTorso" then
+        limb.Massless = true
+    else
+        limb.Massless = false   -- importante para UpperTorso o LowerTorso
+    end
+end
 	if limbExtenderData.limbs then limbExtenderData.limbs[limb] = parent._limbStore[limb] end
 end
 
