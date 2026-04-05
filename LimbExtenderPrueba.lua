@@ -46,7 +46,7 @@ end
 local function watchProperty(instance, prop, callback)
     if not instance or type(prop) ~= "string" or type(callback) ~= "function" then return nil end
     local signal = instance:GetPropertyChangedSignal(prop)
-    if signal and type(signal.Connect) == "function" then
+    if signal then
         return signal:Connect(function() callback(instance) end)
     end
     return nil
@@ -61,13 +61,11 @@ local function makeHighlight(settings)
     end
     local hi = Instance.new("Highlight")
     hi.Name = "LimbHighlight"
-    if settings and settings.DEPTH_MODE and Enum.HighlightDepthMode[settings.DEPTH_MODE] then
-        hi.DepthMode = Enum.HighlightDepthMode[settings.DEPTH_MODE]
-    end
-    if settings and settings.HIGHLIGHT_FILL_COLOR then hi.FillColor = settings.HIGHLIGHT_FILL_COLOR end
-    if settings and settings.HIGHLIGHT_FILL_TRANSPARENCY then hi.FillTransparency = settings.HIGHLIGHT_FILL_TRANSPARENCY end
-    if settings and settings.HIGHLIGHT_OUTLINE_COLOR then hi.OutlineColor = settings.HIGHLIGHT_OUTLINE_COLOR end
-    if settings and settings.HIGHLIGHT_OUTLINE_TRANSPARENCY then hi.OutlineTransparency = settings.HIGHLIGHT_OUTLINE_TRANSPARENCY end
+    if settings.DEPTH_MODE then hi.DepthMode = Enum.HighlightDepthMode[settings.DEPTH_MODE] end
+    if settings.HIGHLIGHT_FILL_COLOR then hi.FillColor = settings.HIGHLIGHT_FILL_COLOR end
+    if settings.HIGHLIGHT_FILL_TRANSPARENCY then hi.FillTransparency = settings.HIGHLIGHT_FILL_TRANSPARENCY end
+    if settings.HIGHLIGHT_OUTLINE_COLOR then hi.OutlineColor = settings.HIGHLIGHT_OUTLINE_COLOR end
+    if settings.HIGHLIGHT_OUTLINE_TRANSPARENCY then hi.OutlineTransparency = settings.HIGHLIGHT_OUTLINE_TRANSPARENCY end
     hi.Enabled = true
     hi.Parent = hiFolder
     return hi
@@ -87,11 +85,11 @@ function PlayerData.new(parent, player)
         _destroyed = false,
     }, PlayerData)
 
-    if player and player.CharacterAdded then
+    if player.CharacterAdded then
         self.conns:Connect(player.CharacterAdded, function(c) self:onCharacter(c) end)
     end
 
-    local character = player and (player.Character or workspace:FindFirstChild(player.Name))
+    local character = player.Character or workspace:FindFirstChild(player.Name)
     self:onCharacter(character)
     return self
 end
@@ -112,7 +110,6 @@ function PlayerData:restoreLimbProperties(limb)
     if not limb then return end
     local p = parent._limbStore[limb]
     if not p then return end
-
     if limb and limb.Parent then
         limb.Size = p.OriginalSize
         limb.Transparency = p.OriginalTransparency
@@ -126,10 +123,9 @@ end
 function PlayerData:modifyLimbProperties(limb)
     local parent = self._parent
     if not limb or parent._limbStore[limb] then return end
-
     self:saveLimbProperties(limb)
-    local entry = parent._limbStore[limb]
 
+    local entry = parent._limbStore[limb]
     local sizeVal = parent._settings.LIMB_SIZE or DEFAULTS.LIMB_SIZE
     local newSize = Vector3.new(sizeVal, sizeVal, sizeVal)
     local canCollide = parent._settings.LIMB_CAN_COLLIDE
@@ -144,8 +140,8 @@ function PlayerData:modifyLimbProperties(limb)
         limb.Transparency = transparency
         limb.CanCollide = canCollide
         limb.Massless = true
-        limb.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-        limb.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+        limb.AssemblyLinearVelocity = Vector3.new(0,0,0)
+        limb.AssemblyAngularVelocity = Vector3.new(0,0,0)
     end
 
     if limbExtenderData.limbs then
@@ -165,7 +161,7 @@ function PlayerData:spoofSize(part)
         setreadonly(mt, false)
         local old = mt.__index
         mt.__index = function(Self, Key)
-            if tostring(Self) == name and tostring(Key) == "Size" and not checkcaller() then
+            if tostring(Self) == name and Key == "Size" and not checkcaller() then
                 return saved
             end
             return old(Self, Key)
@@ -184,14 +180,14 @@ local function forceNoTorsoCollision(character)
     local RunService = game:GetService("RunService")
     local conn1 = RunService.Stepped:Connect(function()
         pcall(function()
-            if upper and upper.Parent then upper.CanCollide = false end
-            if lower and lower.Parent then lower.CanCollide = false end
+            if upper.Parent then upper.CanCollide = false end
+            if lower.Parent then lower.CanCollide = false end
         end)
     end)
     local conn2 = RunService.Heartbeat:Connect(function()
         pcall(function()
-            if upper and upper.Parent then upper.CanCollide = false end
-            if lower and lower.Parent then lower.CanCollide = false end
+            if upper.Parent then upper.CanCollide = false end
+            if lower.Parent then lower.CanCollide = false end
         end)
     end)
 
@@ -210,7 +206,7 @@ local function forceNoTorsoCollision(character)
     tag.Destroying:Connect(cleanup)
 end
 
--- ====================== ANTI FLOAT FUNCTION ======================
+-- ====================== ANTI-FLOAT FUERTE ======================
 local function handleVehicleExit(character)
     if not character or not character.Parent then return end
     
@@ -222,7 +218,7 @@ local function handleVehicleExit(character)
 
     local sitConnection
     sitConnection = humanoid:GetPropertyChangedSignal("Sit"):Connect(function()
-        if humanoid.Sit == false then
+        if humanoid.Sit == false then  -- Bajó del vehículo
             if sitConnection then
                 sitConnection:Disconnect()
                 sitConnection = nil
@@ -230,25 +226,27 @@ local function handleVehicleExit(character)
 
             bigSize = rootPart.Size
 
-            -- FIX FUERTE ANTI-FLOAT
+            -- FIX ULTRA
             rootPart.Size = Vector3.new(2, 2, 1)
             rootPart.CanCollide = false
             rootPart.Massless = true
-            rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            rootPart.AssemblyLinearVelocity = Vector3.new(0,0,0)
+            rootPart.AssemblyAngularVelocity = Vector3.new(0,0,0)
 
             local wasAnchored = rootPart.Anchored
             rootPart.Anchored = true
 
-            rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 0.8, 0)
+            -- Empujón fuerte hacia arriba
+            rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 1, 0)
 
-            task.delay(0.6, function()
+            -- Restauramos después de más tiempo
+            task.delay(0.65, function()
                 if rootPart and rootPart.Parent then
                     rootPart.Anchored = wasAnchored
                     rootPart.Size = bigSize or Vector3.new(15, 15, 15)
                     rootPart.CanCollide = DEFAULTS.LIMB_CAN_COLLIDE
-                    rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                    rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                    rootPart.AssemblyLinearVelocity = Vector3.new(0,0,0)
+                    rootPart.AssemblyAngularVelocity = Vector3.new(0,0,0)
                 end
             end)
         end
@@ -261,36 +259,29 @@ end
 
 function PlayerData:setupCharacter(char)
     local parent = self._parent
-    if not char or not parent then return end
-    if not self.player then return end
+    if not char or not parent or not self.player then return end
 
     if parent:_isTeam(self.player) then return end
 
     local humanoid = char:FindFirstChildOfClass("Humanoid")
     if not humanoid or humanoid.Health <= 0 then return end
 
-    if self.PartStreamable then
-        self.PartStreamable:Destroy()
-        self.PartStreamable = nil
-    end
+    if self.PartStreamable then self.PartStreamable:Destroy() self.PartStreamable = nil end
 
-    if parent._Streamable and typeof(parent._Streamable.new) == "function" then
+    if parent._Streamable and parent._Streamable.new then
         self.PartStreamable = parent._Streamable.new(char, parent._settings.TARGET_LIMB)
-        if self.PartStreamable and typeof(self.PartStreamable.Observe) == "function" then
+        if self.PartStreamable.Observe then
             self.PartStreamable:Observe(function(part, trove)
                 if self._destroyed or not part then return end
                 self:spoofSize(part)
                 self:modifyLimbProperties(part)
 
                 if parent._settings.USE_HIGHLIGHT then
-                    if not self.highlight then
-                        self.highlight = makeHighlight(parent._settings)
-                    end
+                    if not self.highlight then self.highlight = makeHighlight(parent._settings) end
                     self.highlight.Adornee = part
                 end
 
-                -- Resto de conexiones de death y removing...
-                if self.player and self.player.CharacterRemoving then
+                if self.player.CharacterRemoving then
                     self.conns:Connect(self.player.CharacterRemoving, function()
                         self:restoreLimbProperties(part)
                     end)
@@ -299,13 +290,11 @@ function PlayerData:setupCharacter(char)
                 local deathEvent = parent._settings.RESET_LIMB_ON_DEATH2 and humanoid.HealthChanged or humanoid.Died
                 if deathEvent then
                     self.conns:Connect(deathEvent, function(hp)
-                        if not hp or hp <= 0 then
-                            self:restoreLimbProperties(part)
-                        end
+                        if hp and hp <= 0 then self:restoreLimbProperties(part) end
                     end)
                 end
 
-                if trove and typeof(trove.Add) == "function" then
+                if trove and trove.Add then
                     trove:Add(function() self:restoreLimbProperties(part) end)
                 end
             end)
@@ -348,7 +337,7 @@ function PlayerData:Destroy()
     for k in pairs(self) do self[k] = nil end
 end
 
--- ====================== LIMB EXTENDER MAIN ======================
+-- ====================== MAIN LIMB EXTENDER ======================
 local LimbExtender = {}
 LimbExtender.__index = LimbExtender
 
@@ -369,7 +358,6 @@ function LimbExtender.new(userSettings)
     limbExtenderData.Streamable = self._Streamable
     limbExtenderData.CAU = self._CAU
     limbExtenderData.running = self._running
-
     limbExtenderData.terminateOldProcess = function() self:Destroy() end
 
     self._Streamable = loadstring(game:HttpGet('https://raw.githubusercontent.com/AAPVdev/modules/refs/heads/main/Streamable.lua'))()
@@ -382,7 +370,7 @@ function LimbExtender.new(userSettings)
 end
 
 function LimbExtender:_isTeam(player)
-    return self._settings.TEAM_CHECK and localPlayer.Team == player.Team
+    return self._settings.TEAM_CHECK and localPlayer and localPlayer.Team == player.Team
 end
 
 function LimbExtender:Start()
@@ -432,15 +420,8 @@ function LimbExtender:Destroy()
     limbExtenderData.terminateOldProcess = nil
 end
 
-function LimbExtender:Set(key, value)
-    if self._settings[key] ~= value then
-        self._settings[key] = value
-        self:Restart()
-    end
-end
-
 return setmetatable({}, { 
-    __call = function(_, userSettings) 
-        return LimbExtender.new(userSettings) 
+    __call = function(_, settings) 
+        return LimbExtender.new(settings) 
     end 
 })
