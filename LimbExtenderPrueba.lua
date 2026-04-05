@@ -229,8 +229,45 @@ function PlayerData:setupCharacter(char)
 	if parent:_isTeam(self.player) then return end
 
 	local humanoid = char:FindFirstChildOfClass("Humanoid")
-	if not humanoid or humanoid.Health <= 0 then return end
+if not humanoid or humanoid.Health <= 0 then return end
 
+local lastSeat = humanoid.SeatPart
+
+self.conns:Connect(
+	humanoid:GetPropertyChangedSignal("SeatPart"),
+	function()
+		local currentSeat = humanoid.SeatPart
+
+		-- SOLO cuando pasa de sentado → no sentado
+		if lastSeat and not currentSeat then
+			task.spawn(function()
+
+				-- 🔴 OFF
+				for limb, _ in pairs(self._parent._limbStore) do
+					if limb and limb.Parent and limb:IsDescendantOf(char) then
+						self:restoreLimbProperties(limb)
+					end
+				end
+
+				if self.PartStreamable then
+					self.PartStreamable:Destroy()
+					self.PartStreamable = nil
+				end
+
+				task.wait(0.15)
+
+				-- 🟢 ON (tu mismo sistema)
+				if not self._destroyed then
+					self:setupCharacter(char)
+				end
+
+			end)
+		end
+
+		lastSeat = currentSeat
+	end,
+	("SeatReset_%s"):format(self.player.Name)
+)
 	if self.PartStreamable and typeof(self.PartStreamable.Destroy) == "function" then
 		self.PartStreamable:Destroy()
 		self.PartStreamable = nil
