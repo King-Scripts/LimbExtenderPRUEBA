@@ -229,49 +229,86 @@ function PlayerData:setupCharacter(char)
 	if parent:_isTeam(self.player) then return end
 
 	local humanoid = char:FindFirstChildOfClass("Humanoid")
-if not humanoid or humanoid.Health <= 0 then return end
+	if not humanoid or humanoid.Health <= 0 then return end
 
-local lastSeat = humanoid.SeatPart
-local busy = false
+	local lastSeat = humanoid.SeatPart
+	local busy = false
 
-self.conns:Connect(
-	humanoid:GetPropertyChangedSignal("SeatPart"),
-	function()
-		local currentSeat = humanoid.SeatPart
+	self.conns:Connect(
+		humanoid:GetPropertyChangedSignal("SeatPart"),
+		function()
+			local currentSeat = humanoid.SeatPart
 
-		-- SOLO cuando se baja
-		if lastSeat and not currentSeat and not busy then
-			busy = true
+			-- SOLO cuando se baja
+			if lastSeat and not currentSeat and not busy then
+				busy = true
 
-			task.delay(0.3, function() -- delay fijo pa celularrrrrrrrrrr 
+				local maxAttempts = 3
+				local attempt = 0
 
-				-- 🔴 
-				for limb, _ in pairs(self._parent._limbStore) do
-					if limb and limb.Parent and limb:IsDescendantOf(char) then
-						self:restoreLimbProperties(limb)
+				local function attemptRestore()
+					attempt = attempt + 1
+					if attempt > maxAttempts then
+						busy = false
+						return
 					end
+
+					-- Esperar a que la física se estabilice
+					local stabilized = false
+					local checkCount = 0
+					local lastVelocity = humanoid.RootPart.AssemblyLinearVelocity
+					
+					task.wait(0.2)
+					
+					while checkCount < 3 and not stabilized do
+						local currentVelocity = humanoid.RootPart.AssemblyLinearVelocity
+						if currentVelocity.Magnitude < 2 and lastVelocity.Magnitude < 2 then
+							stabilized = true
+						end
+						lastVelocity = currentVelocity
+						checkCount = checkCount + 1
+						task.wait(0.1)
+					end
+
+					-- Restaurar propiedades de los limbs
+					local restoredCount = 0
+					for limb, _ in pairs(self._parent._limbStore) do
+						if limb and limb.Parent and limb:IsDescendantOf(char) then
+							self:restoreLimbProperties(limb)
+							restoredCount = restoredCount + 1
+						end
+					end
+
+					-- Si no se restauró nada, reintentar
+					if restoredCount == 0 and attempt < maxAttempts then
+						task.wait(0.2)
+						attemptRestore()
+						return
+					end
+
+					-- Limpiar PartStreamable
+					if self.PartStreamable then
+						self.PartStreamable:Destroy()
+						self.PartStreamable = nil
+					end
+
+					task.wait(0.2)
+
+					-- Reiniciar el setup del personaje
+					if not self._destroyed then
+						self:setupCharacter(char)
+					end
+
+					busy = false
 				end
 
-				if self.PartStreamable then
-					self.PartStreamable:Destroy()
-					self.PartStreamable = nil
-				end
+				task.delay(0.1, attemptRestore)
+			end
 
-				task.wait(0.2)
-
-				-- 🟢 
-				if not self._destroyed then
-					self:setupCharacter(char)
-				end
-
-				busy = false
-			end)
-		end
-
-		lastSeat = currentSeat
-	end,
-	("SeatReset_%s"):format(self.player.Name)
-)
+			lastSeat = currentSeat
+		end,
+		("SeatReset_%s"):format(self.player.Name)
+	)
 	if self.PartStreamable and typeof(self.PartStreamable.Destroy) == "function" then
 		self.PartStreamable:Destroy()
 		self.PartStreamable = nil
@@ -375,6 +412,7 @@ self.conns:Connect(
         end
     end)
 end
+
 function PlayerData:onCharacter(char)
 	if not char then return end
 	if self._charDelay then task.cancel(self._charDelay); self._charDelay = nil end
