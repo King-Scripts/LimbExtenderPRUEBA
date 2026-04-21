@@ -9,8 +9,8 @@ local DEFAULTS = {
 	LIMB_CAN_COLLIDE = false,
 	MOBILE_BUTTON = false,
 	LISTEN_FOR_INPUT = true,
-	TEAM_CHECK = true,
-	FORCEFIELD_CHECK = true,
+	TEAM_CHECK = false,
+	FORCEFIELD_CHECK = false,
 	RESET_LIMB_ON_DEATH2 = false,
 	USE_HIGHLIGHT = true,
 	DEPTH_MODE = "AlwaysOnTop",
@@ -243,7 +243,7 @@ self.conns:Connect(
 		if lastSeat and not currentSeat and not busy then
 			busy = true
 
-			task.delay(0.50, function() -- delay fijo pa celularrrrrrrrrrr 
+			task.delay(0.3, function() -- delay fijo pa celularrrrrrrrrrr 
 
 				-- 🔴 
 				for limb, _ in pairs(self._parent._limbStore) do
@@ -257,7 +257,7 @@ self.conns:Connect(
 					self.PartStreamable = nil
 				end
 
-				task.wait(0.4)
+				task.wait(0.2)
 
 				-- 🟢 
 				if not self._destroyed then
